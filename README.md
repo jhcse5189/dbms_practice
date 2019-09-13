@@ -1,6 +1,6 @@
 Database Management System
 
-- practice in MySQL on Ubuntu 18.04.3 LTS (Linux 64-bit) -
+- practice in MySQL on Ubuntu 18.04.3 LTS (Linux 64-bit)
 
 
 
