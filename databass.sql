@@ -1,8 +1,4 @@
 # create tables
-CREATE DATABASE Bass;
-
-use Bass;
-
 CREATE TABLE master (
   id INT(11) NOT NULL AUTO_INCREMENT,
   model VARCHAR(25) DEFAULT NULL,
@@ -21,7 +17,7 @@ CREATE TABLE servant (
 CREATE TABLE master_servant_relation (
   sid INT(11) NOT NULL,
   bid INT(11) NOT NULL,
-  serveFrom DATATIME NOT NULL,
+  serveFrom DATETIME NOT NULL,
   PRIMARY KEY (sid, bid, serveFrom),
   FOREIGN KEY (sid) REFERENCES servant (id),
   FOREIGN KEY (bid) REFERENCES master (id)
@@ -43,4 +39,4 @@ SELECT * FROM master;
 SELECT * FROM servant;
 SELECT * FROM master_servant_relation;
 
-SELECT master.id, model, manufacturer, nOfStrings, price, servant.name AS servent, serveFrom FROM master_servant_relation AS msr LEFT JOIN servant ON msr.sid=servant.id LEFT JOIN master ON msr.sid=master.id;
+SELECT master.id, model, manufacturer, nOfStrings, price, servant.name AS servant, serveFrom FROM master_servant_relation AS msr LEFT JOIN servant ON msr.sid=servant.id LEFT JOIN master ON msr.bid=master.id;
