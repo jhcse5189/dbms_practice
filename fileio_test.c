@@ -1,4 +1,17 @@
+#include <stdio.h>
+#include <stdlib.h>
 
+#define int64_t int
+
+typedef struct record {
+  int value;
+} record;
+
+int main() {
+
+    int i, j;
+    FILE * fp;
+    record r;
 
     /* create the file of 10 records */
     fp = fopen("junk", "w");
@@ -23,9 +36,8 @@
     fclose(fp);
     printf("\n");
 
-
-    /* use fseek to read the 10 records
-       in reverse order */
+/*
+    //use fseek to read the 10 records in reverse order.
 
     fp = fopen("junk", "r");
     if (!fp)
@@ -39,8 +51,7 @@
     printf("\n");
 
 
-    /* use fseek to read the 10 record
-       in reverse order */
+    //use fseek to read the 10 record in reverse order
 
     fp = fopen("junk", "r");
     if (!fp)
@@ -55,8 +66,7 @@
     printf("\n");
 
 
-    /* use fseek to read 4th record,
-       change it, and write it back */
+    //use fseek to read 4th record, change it, and write it back
 
     fp = fopen("junk", "r+");
     if (!fp)
@@ -71,8 +81,7 @@
     printf("\n");
 
 
-    /* read the 10 records to insure
-       4th record was changed */
+    //read the 10 records to insure 4th record was changed
 
     fp = fopen("junk", "r");
     if (!fp)
@@ -83,6 +92,8 @@
     }
     fclose(fp);
     printf("\n");
+
+*/
 
     return 0;
 }

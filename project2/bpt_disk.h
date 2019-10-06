@@ -24,21 +24,73 @@
  *
  */
 
+/* One record requires 128 Bytes
+   ,therefore maximum 31 records per one data page
+   can be contained. */
+
 typedef struct record {
-  int key;
-  // *** value mush be implemented in string type!
-  int value;
+  int64_t key;
+  char value[120];
 } record;
 
 
+/*
+ * Type representing a node in the disk-based B+ tree.
+ * This type is general enough to serve for both
+ * the leaf and the internal node.
+ * ...
+ * sizeof (node pointer) is 8 bytes,
+ * because it uses C's pointer size!
+ */
+
+
+/* Leaf and Internal Page */
 typedef struct node {
-  void ** pointers;
-  int * keys;
+
+  /* Page Header is different between leaf and internal page
+     ,but it requires 128 Bytes
+     except records / indexing key and page pointer area. */
+
   struct node * parent;
-  bool is_leaf;
+  int is_leaf;
   int num_keys;
-  struct node * next;
+  char reserved[104]; //112 - 8 = 104
+  struct node * right_or_indexing;
+
+  /* Leaf Page contains the key-value records
+     ,otherwise Internal Page contains the key-(indexing)pointer pairs. */
+
+  /* union, it means a single variable, so same memory location. */
+
+  union { //union tag;
+    struct {
+        int64_t key;
+        struct node * pointer;
+    } internal[248];
+    struct record records[31];
+  } pairs; //union variable;
+
 } node;
+
+
+/* Header Page requires 24 Bytes except reserved space. */
+typedef struct header_page_t {
+
+  struct free_page_t * free;
+  struct node * root;
+  int num_pages;
+  char reserved[4072];
+
+} header_page_t;
+
+
+/* Free Page requires 8 Bytes except not using space. */
+typedef struct free_page_t {
+
+  struct free_page_t * next;
+  char reserved[4088];
+
+} free_page_t;
 
 // GLOBALS.
 
@@ -57,7 +109,11 @@ extern int order;
 
 // Output and utility.
 
-void find_and_print(node * root, int key);
+header_page_t * header_init( void );
+
+int open_table(char * pathname);
+
+void find_and_print(node * root, int64_t key);
 record * find( node * root, int key );
 
 // Insertion.

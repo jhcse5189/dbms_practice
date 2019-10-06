@@ -25,12 +25,28 @@
 
 // OUTPUT AND UTILITIES
 
-void find_and_print( node * root, int key ) {
+
+header_page_t * header_init( void ) {
+
+  header_page_t * tmp = (header_page_t*)malloc(sizeof(header_page_t));
+  tmp->free = 0x1000;
+  tmp->root = NULL;
+  tmp->num_pages = 1;
+  return tmp;
+}
+
+
+int open_table(char * pathname) {
+  return 1;
+}
+
+
+void find_and_print( node * root, int64_t key ) {
   record * r = find(root, key);
   if (r == NULL)
-    printf("Record not found under key %d.\n", key);
+    printf("Record not found under key %ld.\n", key);
   else
-    printf("Record at %lx -- key %d, value %d.\n",
+    printf("Record at %lx -- key %ld, value %s.\n",
             (unsigned long)r, key, r->value);
 }
 
