@@ -16,7 +16,7 @@ int main( int argc, char ** argv ) {
 
   char * filepath;
   FILE * fp;
-  node * root;
+  page_t * root;
   int input, valueOfKey;
   char instruction;
 
