@@ -1,19 +1,92 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define int64_t int
 
 typedef struct record {
   int value;
 } record;
 
-int main() {
 
-    int i, j;
-    FILE * fp;
+int open_table( char * pathname );
+
+int db_delete( int64_t key );
+
+int db_insert( int64_t key, char * value);
+
+char * db_find( int64_t key, char * ret_val);
+
+
+int main( int argc, char ** argv ) {
+
+    int64_t key;
+    char * value;
+
+    int table_id;
+    char instruction;
     record r;
 
-    /* create the file of 10 records */
+    table_id = open_table("junk");
+
+    printf("> ");
+    while (scanf("%c", &instruction) != EOF) {
+      switch (instruction) {
+        case 'd':
+          scanf("%d", &key);
+          db_delete(key);
+          break;
+        case 'i':
+          open_table("junk");
+          scanf("%d %s", &input, value);
+          db_insert(key, value);
+          break;
+        case 'f':
+          scanf("%d", &input);
+          value = db_find(key);
+          printf("%s\n", value);
+          break;
+        case 'q':
+          while (getchar() != (int)'\n');
+          printf("bye\n");
+          return 0;
+          break;
+      }
+      while (getchar() != (int)'\n');
+      printf("> ");
+    }
+    printf("\n");
+    return 0;
+}
+
+int open_table(char * pathname) {
+
+  FILE * fp = fopen(pathname, "w+");
+  return 1;
+}
+
+int db_delete( int64_t key ) {
+
+  record r;
+  return 1;
+}
+
+int db_insert( int64_t key, char * value) {
+
+  record r;
+  r.value = key;
+  fwrite(&r, sizeof(record), 1);
+  fclose(fp);
+
+  return 1;
+}
+
+char * db_find( int64_t key, char * ret_val) {
+  char * tmp;
+  return tmp;
+}
+
+/*
+
+    // create the file of 10 records
     fp = fopen("junk", "w");
     if (!fp)
       return 1;
@@ -25,7 +98,7 @@ int main() {
 
 
 
-    /* read the 10 records */
+    // read the 10 records
     fp = fopen("junk", "r");
     if (!fp)
       return 1;
@@ -35,6 +108,8 @@ int main() {
     }
     fclose(fp);
     printf("\n");
+
+*/
 
 /*
     //use fseek to read the 10 records in reverse order.
@@ -94,6 +169,3 @@ int main() {
     printf("\n");
 
 */
-
-    return 0;
-}
