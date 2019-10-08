@@ -1,7 +1,7 @@
 /*
  * bpt_disk.c
  */
-#define Version "0.3"
+#define Version "0.4"
 /*
  *
  * bpt: disk-based B+Tree Implementation
@@ -72,20 +72,6 @@ int open_table(char * pathname) {
   return fd;
 }
 
-
-int db_insert(int64_t key, char * value) {
-  return 1;
-}
-
-char * db_find(int64_t key, char * ret_val) {
-  char * c;
-  return c;
-}
-
-int db_delete(int64_t key) {
-  return 1;
-}
-
 void db_exit( void ) {
 
   close(fd);
@@ -110,16 +96,13 @@ void init_header_page( void ) {
 }
 
 // TODO: determine that it is really needed...
-void set_header_free(pagenum_t n) {
-  return;
-}
-void set_header_num_pages(pagenum_t n) {
-  return;
-}
+void set_header_free(pagenum_t n) { return; }
+void set_header_num_pages(pagenum_t n) { return; }
 
 
-void find_and_print( page_t * root, int64_t key ) {
-  record * r = find(root, key);
+
+void find_and_print( int64_t key ) {
+  record * r = find(key);
   if (r == NULL)
     printf("Record not found under key %ld.\n", key);
   else
@@ -127,10 +110,15 @@ void find_and_print( page_t * root, int64_t key ) {
             (unsigned long)r, key, r->value);
 }
 
-record * find( page_t * root, int key ) {
+record * find( int key ) {
   printf("(inside the find function...)\n");
   record * r = NULL;
   return r;
+}
+
+char * db_find(int64_t key, char * ret_val) {
+  char * c;
+  return c;
 }
 
 // INSERTION
@@ -142,14 +130,17 @@ record * find( page_t * root, int key ) {
  * properties.
  */
 
-page_t * insert( page_t * root, int key, char * value ) {
-  printf("(inside the master insert function...)\n");
-  return root;
+int db_insert(int64_t key, char * value) {
+
+  return 0;
 }
 
 // DELETION
 
-page_t * delete(page_t * root, int key) {
-  printf("(inside the master delete function...)\n");
-  return root;
+/* Master deletion function.
+ *
+ */
+
+int db_delete(int64_t key) {
+  return 1;
 }

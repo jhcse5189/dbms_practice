@@ -4,32 +4,27 @@
 
 int main( int argc, char ** argv ) {
 
-        /* ? and null why? */
-        page_t * root = NULL;
-
-  int key;
+  int64_t key;
   /* Q. why not char value[120]? */
   char * value;
   char instruction;
 
-  // TODO: init Header Page.
   int table_id = open_table("databass");
 
-  // MUST_TODO: determine root's type and implement insert to db_insert().
   printf("> ");
   while (scanf("%c", &instruction) != EOF) {
     switch (instruction) {
       case 'd':
-        scanf("%d", &key);
-        root = delete(root, key);
+        scanf("%ld", &key);
+        root = db_delete(key);
         break;
       case 'i':
         scanf("%d %s", &key, value);
-        root = insert(root, key, value);
+        root = db_insert(key, value);
         break;
       case 'f':
-        scanf("%d", &key);
-        find_and_print(root, key);
+        scanf("%ld", &key);
+        db_find(key);
         break;
       case 'q':
         while (getchar() != (int)'\n');

@@ -141,30 +141,29 @@ void file_read_page(pagenum_t pagenum, page_t * dest);
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
-void set_header_free(pagenum_t);
 
+void set_header_free(pagenum_t);
 void set_header_num_pages(pagenum_t);
 
 
+
 int open_table( char * pathname );
-int db_insert( int64_t key, char * value );
-char * db_find( int64_t key, char * ret_val );
-int db_delete( int64_t key );
 void db_exit( void );
-
-
-
 void init_header_page( void );
+
+
+
+char * db_find( int64_t key, char * ret_val );
 
 void find_and_print(page_t * root, int64_t key);
 record * find( page_t * root, int key );
 
 // Insertion.
 
-page_t * insert( page_t * root, int key, char * value );
+int db_insert( int64_t key, char * value );
 
 // Deletion.
 
-page_t * delete(page_t * root, int key);
+int db_delete( int64_t key );
 
 #endif /* __BPT_H__*/
