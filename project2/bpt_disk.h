@@ -24,6 +24,10 @@
 // One page size is 4096 Bytes.
 #define PAGE_SIZE 4096
 
+#define HEADER_PAGE_OFFSET 0
+#define HEADER_PAGE_FREE_PAGES_OFFSET 0
+#define HEADER_PAGE_ROOT_OFFSET 8
+#define HEADER_PAGE_NUM_PAGES_OFFSET 16
 
 //means page number, not offset.
 typedef uint64_t pagenum_t;
@@ -49,17 +53,19 @@ typedef struct record {
  */
 
 /* Leaf and Internal Page */
-typedef struct page_t {
 
+
+
+typedef struct node_t {
   /* Page Header is different between leaf and internal page
      ,but it requires 128 Bytes
      except records / indexing key and page pointer area. */
 
-  struct page_t * parent;
+  pagenum_t parent; //because, it doesn't need union with free_page_t.
   int is_leaf;
   int num_keys;
   char reserved[104]; //112 - 8 = 104
-  struct page_t * right_or_indexing;
+  pagenum_t right_or_indexing;
 
   /* Leaf Page contains the key-value records
      ,otherwise Internal Page contains the key-(indexing)pointer pairs. */
@@ -67,15 +73,15 @@ typedef struct page_t {
   /* union, it means a single variable, so same memory location. */
 
   union { //union tag;
-    struct {
+    struct
+    {
         int64_t key;
-        struct page_t * pointer;
+        pagenum_t pointer;
     } internal[248];
     struct record records[31];
   } pairs; //union variable;
 
-} page_t;
-
+} node_t;
 
 
 /* Header Page requires 24 Bytes except reserved space. */
@@ -98,6 +104,14 @@ typedef struct free_page_t {
 
 } free_page_t;
 
+
+typedef union page_t {
+
+  header_page_t header_page;
+  free_page_t free_page;
+  node_t node;
+
+} page_t;
 
 
 // GLOBALS.
@@ -142,21 +156,24 @@ void file_read_page(pagenum_t pagenum, page_t * dest);
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
 
-void set_header_free(pagenum_t);
-void set_header_num_pages(pagenum_t);
-
 
 
 int open_table( char * pathname );
 void db_exit( void );
 void init_header_page( void );
 
+pagenum_t get_header_root( void );
+int64_t get_header_num_pages( void );
+
+void set_header_free( pagenum_t free );
+void set_header_root( pagenum_t root );
+void set_header_num_pages( int64_t num_pages );
 
 
 char * db_find( int64_t key, char * ret_val );
 
-void find_and_print(page_t * root, int64_t key);
-record * find( page_t * root, int key );
+void find_and_print( int64_t key );
+record * find( int key );
 
 // Insertion.
 
