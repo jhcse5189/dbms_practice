@@ -185,6 +185,11 @@ record * find( int key );
 
 // Insertion.
 
+int insert_into_node_after_splitting( pagenum_t parent, int left_index, int64_t key, pagenum_t right );
+int insert_into_node( pagenum_t n, int left_index, int64_t key, pagenum_t right );
+int get_left_index( pagenum_t parent, pagenum_t left );
+
+int insert_into_new_root( pagenum_t left, int64_t key, pagenum_t right );
 int insert_into_parent( pagenum_t leaf, int64_t new_key, pagenum_t new_leaf );
 
 int insert_into_leaf( pagenum_t leaf, int64_t key, char * value );

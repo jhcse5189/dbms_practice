@@ -41,14 +41,15 @@ header_page_t header_page;
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page( void ) {
 
+  free_page_t * tmp_empty = (free_page_t*)malloc(sizeof(free_page_t));
+  memset(tmp_empty, 0, PAGE_SIZE);
+
   if ( get_header_free() == 0 )
     file_free_page( get_header_num_pages() );
 
   pagenum_t empty_page_num = get_header_free();
-  set_header_free(  );
-
-  
-  pread(fd, &, PAGE_SIZE, PAGE_SIZE * empty_page_num);
+  pread(fd, tmp_empty, PAGE_SIZE, PAGE_SIZE * empty_page_num);
+  set_header_free( tmp_empty->next );
 
   page_t * empty_page = (page_t*)malloc(sizeof(page_t));
   memset(empty_page, 0, PAGE_SIZE);
@@ -56,6 +57,8 @@ pagenum_t file_alloc_page( void ) {
 
   inc_header_num_pages();
 
+  free(tmp_empty);
+  free(empty_page);
   return empty_page_num;
 }
 
@@ -181,26 +184,26 @@ record * find( int key ) {
 pagenum_t find_leaf( int64_t key ) {
 
   // TODO: prevent to be called when root doesn't exist yet.
-  int i = 0;
+  int i;
   pagenum_t c = get_header_root();
-  page_t * tmp = (page_t*)malloc(sizeof(page_t));
-  pread(fd, tmp, PAGE_SIZE, PAGE_SIZE * c);
+  page_t * root = (page_t*)malloc(sizeof(page_t));
+  pread(fd, root, PAGE_SIZE, PAGE_SIZE * c);
 
-  while (!tmp->node.is_leaf) {
+  while (!root->node.is_leaf) {
 
     i = 0;
-    while (i < tmp->node.num_keys) {
-      if (key >= tmp->node.internal[i].key) i++;
+    while (i < root->node.num_keys) {
+      if (key >= root->node.internal[i].key) i++;
       else break;
     }
 
-    if (i == 0) c = tmp->node.right_or_indexing;
-    else c = tmp->node.internal[i - 1].pointer;
+    if (i == 0) c = root->node.right_or_indexing;
+    else c = root->node.internal[i - 1].pointer;
 
-    pread(fd, &tmp, PAGE_SIZE, PAGE_SIZE * c);
+    pread(fd, root, PAGE_SIZE, PAGE_SIZE * c);
   }
 
-  free(tmp);
+  free(root);
   return c;
 }
 
@@ -224,14 +227,139 @@ char * db_find(int64_t key, char * ret_val) {
 }
 
 
+int cut( int length ) {
+  if ( length % 2 == 0)
+    return length / 2;
+  else
+    return length / 2 + 1;
+}
 
 
 // INSERTION
 
-int insert_into_parent( pagenum_t leaf, int64_t new_key, pagenum_t new_leaf ) {
 
-  printf("in insert_into_parent...\n");
+int insert_into_node_after_splitting( pagenum_t old_node, int left_index, int64_t key, pagenum_t right ) {
+  
+  
+
   return 0;
+}
+
+
+int insert_into_node( pagenum_t n, int left_index, int64_t key, pagenum_t right ) {
+
+  int i;
+  page_t * tmp_n = (page_t*)malloc(sizeof(page_t));
+  file_read_page( n, tmp_n );
+
+  for ( i = tmp_n->node.num_keys; i > left_index; i-- ) {
+    tmp_n->node.internal[i].key = tmp_n->node.internal[i - 1].key;
+    tmp_n->node.internal[i].pointer = tmp_n->node.internal[i - 1].pointer;
+  }
+  tmp_n->node.internal[left_index].key = key;
+  tmp_n->node.internal[left_index].pointer = right;
+  tmp_n->node.num_keys++;
+
+  file_write_page( n, tmp_n );
+
+  free(tmp_n);
+  return 0;
+}
+
+int get_left_index( pagenum_t parent, pagenum_t left ) {
+
+  printf("parent num is...%ld!\n", parent);
+
+  page_t * tmp_parent = (page_t*)malloc(sizeof(page_t));
+  file_read_page( parent, tmp_parent );
+
+  printf("t_p->node.num_keys:%d\n", tmp_parent->node.num_keys);
+
+  if ( tmp_parent->node.right_or_indexing == left )
+    return 0;
+
+  int left_idx = 1;
+  while ( left_idx <= tmp_parent->node.num_keys &&
+            tmp_parent->node.internal[left_idx - 1].pointer != left )
+    left_idx++;
+  return left_idx;
+}
+
+
+int insert_into_new_root( pagenum_t left, int64_t key, pagenum_t right ) {
+
+  pagenum_t root;
+  
+  page_t * new_root = (page_t*)malloc(sizeof(page_t));
+  memset(new_root, 0, PAGE_SIZE);
+
+  page_t * tmp_left = (page_t*)malloc(sizeof(page_t));
+  pread(fd, tmp_left, PAGE_SIZE, PAGE_SIZE * left);
+
+  page_t * tmp_right = (page_t*)malloc(sizeof(page_t));
+  pread(fd, tmp_right, PAGE_SIZE, PAGE_SIZE * right);
+
+  new_root->node.parent = 0;
+  new_root->node.is_leaf = 0;
+  new_root->node.num_keys++;
+  new_root->node.right_or_indexing = left;
+
+  new_root->node.internal[0].key = key;
+  new_root->node.internal[0].pointer = right;
+
+  root = file_alloc_page();
+  
+  set_header_root( root );
+  tmp_left->node.parent = root;
+  tmp_right->node.parent = root;
+
+  file_write_page( root, new_root );
+  file_write_page( left, tmp_left );
+  file_write_page( right, tmp_right );
+
+  free(new_root);
+  free(tmp_left);
+  free(tmp_right);
+
+  return 0;
+}
+
+int insert_into_parent( pagenum_t left, int64_t key, pagenum_t right ) {
+
+  printf("in insert_into_parent...left is %ld.\n", left);
+
+  page_t * tmp_left = (page_t*)malloc(sizeof(page_t)); 
+  file_read_page( left, tmp_left );
+
+  int left_index;
+  pagenum_t parent = tmp_left->node.parent;
+
+  /* Case 1: new root. */
+
+  if ( parent == 0 )
+    return insert_into_new_root( left, key, right );
+
+
+  /* Case 2: insert new_key from laaf or internal to existing parent page. */
+
+  page_t * tmp_parent = (page_t*)malloc(sizeof(page_t));
+  pread(fd, tmp_parent, PAGE_SIZE, PAGE_SIZE * tmp_left->node.parent);
+
+  left_index = get_left_index( parent, left );
+  printf("l_idx: %d\n", left_index);
+
+  free(tmp_left);
+
+  /* 2-1 (simple.): the new_key fits into the order. */
+
+  if ( tmp_parent->node.num_keys < order - 1 ) {
+    free(tmp_parent);
+    return insert_into_node( parent, left_index, key, right );
+  }
+
+  /* 2-2. (hard.): split the parent node */
+
+  return insert_into_node_after_splitting( parent, left_index, key, right );
 }
 
 int insert_into_leaf( pagenum_t leaf, int64_t key, char * value ) {
@@ -241,7 +369,7 @@ int insert_into_leaf( pagenum_t leaf, int64_t key, char * value ) {
   pread(fd, tmp, PAGE_SIZE, PAGE_SIZE * leaf);
 
   ip = 0;
-  while (ip < tmp->node.num_keys && tmp->node.records[ip].key < key)
+  while ( ip < tmp->node.num_keys && tmp->node.records[ip].key < key )
     ip++;
 
   for (i = tmp->node.num_keys; i > ip; i--) {
@@ -265,15 +393,74 @@ int insert_into_leaf( pagenum_t leaf, int64_t key, char * value ) {
  */
 int insert_into_leaf_after_splitting( pagenum_t leaf, int64_t key, char * value ) {
 
-  pagenum_t new_leaf;
+  int ip, split, i, j;
+  pagenum_t new_leaf = file_alloc_page();
   int64_t new_key;
 
-  file_alloc_page()
+  page_t * tmp_new = (page_t*)malloc(sizeof(page_t));
+  memset(tmp_new, 0, PAGE_SIZE);
+  tmp_new->node.is_leaf = 1;
 
-  printf("Ohooo~shit~ i must implement split~ bb...\n");
+  page_t * tmp_leaf = (page_t*)malloc(sizeof(page_t));
+  memset(tmp_leaf, 0, PAGE_SIZE);
+
+  page_t * origin = (page_t*)malloc(sizeof(page_t));
+  pread(fd, origin, PAGE_SIZE, PAGE_SIZE * leaf);
 
 
-  new_key = new_leaf(page_t type)->node.records[0].key;
+  ip = 0;
+  while ( ip < order - 1 && origin->node.records[ip].key < key )
+    ip++;
+
+  for ( i = 0, j = 0; i < origin->node.num_keys; i++, j++ ) {
+    if (j == ip) j++;
+    tmp_leaf->node.records[j].key = origin->node.records[i].key;
+    strcpy(tmp_leaf->node.records[j].value, origin->node.records[i].value);
+  }
+
+  tmp_leaf->node.records[ip].key = key;
+  strcpy(tmp_leaf->node.records[ip].value, value);
+  
+  origin->node.num_keys = 0;
+
+  split = cut( order - 1 );
+  //if order is 4, split is 2.
+  //if order is 5, split is 3;
+
+  for ( i = 0; i < split; i++ ) {
+    origin->node.records[i].key = tmp_leaf->node.records[i].key;
+    strncpy(origin->node.records[i].value, "", 120);
+    strcpy(origin->node.records[i].value, tmp_leaf->node.records[i].value);
+    origin->node.num_keys++;
+  }
+
+  for ( i = split, j = 0; i < order; i++, j++ ) {
+    tmp_new->node.records[j].key = tmp_leaf->node.records[i].key;
+    strcpy(tmp_new->node.records[j].value, tmp_leaf->node.records[i].value);
+    tmp_new->node.num_keys++;
+  }
+  
+  tmp_new->node.right_or_indexing = origin->node.right_or_indexing;
+  origin->node.right_or_indexing = new_leaf;
+
+  for ( i = origin->node.num_keys; i < order - 1; i++ ) {
+    origin->node.records[i].key = 0;
+    strncpy(origin->node.records[i].value, "", 120);
+  }
+  // for ( i = tmp_new->node.num_keys; i < order - 1; i++ ) {
+
+  // }
+
+  tmp_new->node.parent = origin->node.parent;
+
+  file_write_page( new_leaf, tmp_new );
+  file_write_page( leaf, origin );
+
+  new_key = tmp_new->node.records[0].key;
+
+  free(tmp_new);
+  free(tmp_leaf);
+  free(origin);
 
   return insert_into_parent( leaf, new_key, new_leaf );
 }
@@ -284,14 +471,9 @@ int start_new_tree( int64_t key, char * value ) {
   memset(root, 0, PAGE_SIZE);
 
   root->node.is_leaf = 1;
-  ++root->node.num_keys;
+  root->node.num_keys++;
   root->node.records[0].key = key;
   strcpy(root->node.records[0].value, value);
-
-  //before insert the root, header page setting.
-  set_header_free(1);
-  file_free_page( get_header_free() );
-
 
   file_write_page( file_alloc_page(), root );
   set_header_root(1);
@@ -319,17 +501,13 @@ int db_insert(int64_t key, char * value) {
   //1. find the right place to insert.
   //2. make a record to insert has the key-value pair.
 
-
-
   //3-1. root page dosen't exist yet.
   //   -> make root and write.
 
   // f_read_p of header page.
   // read header_page's root num -> 0.
-  if ( get_header_root() == 0 ) {
-    printf("%ld\n", get_header_root());
+  if ( get_header_root() == 0 )
     return start_new_tree( key, value );
-  }
 
   // f_alloc_p to
   //    calc. pagenum_t by header page's free
@@ -343,8 +521,6 @@ int db_insert(int64_t key, char * value) {
   //3-2. root page already exists.
   //     -> leaf page has space for a record.
   //  OR -> leaf page must be split first.
-
-  printf("case:root already...\n");
 
   leaf = find_leaf( key );
   page_t * tmp = (page_t*)malloc(sizeof(page_t));
