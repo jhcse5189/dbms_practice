@@ -24,8 +24,10 @@
 // One page size is 4096 Bytes.
 #define PAGE_SIZE 4096
 
+#define HEADER_PAGE_NUMBER 0
+
 #define HEADER_PAGE_OFFSET 0
-#define HEADER_PAGE_FREE_PAGES_OFFSET 0
+#define HEADER_PAGE_FREE_OFFSET 0
 #define HEADER_PAGE_ROOT_OFFSET 8
 #define HEADER_PAGE_NUM_PAGES_OFFSET 16
 
@@ -79,7 +81,7 @@ typedef struct node_t {
         pagenum_t pointer;
     } internal[248];
     struct record records[31];
-  } pairs; //union variable;
+  }; //union variable;
 
 } node_t;
 
@@ -125,15 +127,17 @@ typedef union page_t {
  * ...
  */
 
+/* order of tree */
 extern int order;
 
 /* file descriptor. */
-
 extern int fd;
 
-/* Header Page */
+/* Free Page List */
+extern free_page_t free_page_list;
 
-extern header_page_t header_page;
+/* Header Page */
+header_page_t header_page;
 
 // FUNCTION PROTOTYPES.
 
@@ -162,14 +166,18 @@ int open_table( char * pathname );
 void db_exit( void );
 void init_header_page( void );
 
+pagenum_t get_header_free ( void );
 pagenum_t get_header_root( void );
 int64_t get_header_num_pages( void );
 
 void set_header_free( pagenum_t free );
 void set_header_root( pagenum_t root );
 void set_header_num_pages( int64_t num_pages );
+void inc_header_num_pages( void );
+void dec_header_free_pages( void );
 
 
+pagenum_t find_leaf( int64_t key );
 char * db_find( int64_t key, char * ret_val );
 
 void find_and_print( int64_t key );
@@ -177,6 +185,11 @@ record * find( int key );
 
 // Insertion.
 
+int insert_into_parent( pagenum_t leaf, int64_t new_key, pagenum_t new_leaf );
+
+int insert_into_leaf( pagenum_t leaf, int64_t key, char * value );
+int insert_into_leaf_after_splitting( pagenum_t leaf, int64_t key, char * value );
+int start_new_tree( int64_t key, char * value );
 int db_insert( int64_t key, char * value );
 
 // Deletion.

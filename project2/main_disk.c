@@ -5,8 +5,8 @@
 int main( int argc, char ** argv ) {
 
   int64_t key;
-  /* Q. why not char value[120]? */
-  char * value;
+  // TODO: at Windows, change to char * value and run.;
+  char value[120];
   char instruction;
 
   int table_id = open_table("databass");
