@@ -38,12 +38,12 @@ typedef uint64_t pagenum_t;
 // TYPES.
 
 /* One record requires 128 Bytes.
-   Therefore maximum 31 records per one data page
-   can be contained. */
+     Therefore maximum 31 records per one data page
+     can be contained. */
 
 typedef struct record {
-  int64_t key;
-  char value[120];
+    int64_t key;
+    char value[120];
 } record;
 
 
@@ -59,29 +59,30 @@ typedef struct record {
 
 
 typedef struct node_t {
-  /* Page Header is different between leaf and internal page
-     ,but it requires 128 Bytes
-     except records / indexing key and page pointer area. */
+    /* Page Header is different between leaf and internal page
+         ,but it requires 128 Bytes
+         except records / indexing key and page pointer area. */
 
-  pagenum_t parent; //because, it doesn't need union with free_page_t.
-  int is_leaf;
-  int num_keys;
-  char reserved[104]; //112 - 8 = 104
-  pagenum_t right_or_indexing;
+    pagenum_t parent; //because, it doesn't need union with free_page_t.
+    int is_leaf;
+    int num_keys;
+    char reserved[104]; //112 - 8 = 104
+    pagenum_t right_or_indexing;
 
-  /* Leaf Page contains the key-value records
-     ,otherwise Internal Page contains the key-(indexing)pointer pairs. */
+    /* Leaf Page contains the key-value records
+         ,otherwise Internal Page contains the key-(indexing)pointer pairs. */
 
-  /* union, it means a single variable, so same memory location. */
+    /* union, it means a single variable, so same memory location. */
 
-  union { //union tag;
-    struct
-    {
-        int64_t key;
-        pagenum_t pointer;
-    } internal[248];
-    struct record records[31];
-  }; //union variable;
+    union { //union tag;
+        struct {
+            int64_t key;
+            pagenum_t pointer;
+        } internal[248];
+        struct {
+            record records[31];
+        }
+    }; //union variable;
 
 } node_t;
 
@@ -89,10 +90,10 @@ typedef struct node_t {
 /* Header Page requires 24 Bytes except reserved space. */
 typedef struct header_page_t {
 
-  pagenum_t free;
-  pagenum_t root;
-  int64_t num_pages;
-  char reserved[4072];
+    pagenum_t free;
+    pagenum_t root;
+    int64_t num_pages;
+    char reserved[4072];
 
 } header_page_t;
 
@@ -101,17 +102,17 @@ typedef struct header_page_t {
 /* Free Page requires 8 Bytes except not using space. */
 typedef struct free_page_t {
 
-  pagenum_t next;
-  char reserved[4088];
+    pagenum_t next;
+    char reserved[4088];
 
 } free_page_t;
 
 
 typedef union page_t {
 
-  header_page_t header_page;
-  free_page_t free_page;
-  node_t node;
+    header_page_t header_page;
+    free_page_t free_page;
+    node_t node;
 
 } page_t;
 
@@ -160,6 +161,7 @@ void file_read_page(pagenum_t pagenum, page_t * dest);
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
 
+void print_tree( pagenum_t n );
 
 
 int open_table( char * pathname );
@@ -175,6 +177,8 @@ void set_header_root( pagenum_t root );
 void set_header_num_pages( int64_t num_pages );
 void inc_header_num_pages( void );
 void dec_header_free_pages( void );
+
+pagenum_t get_node_parent_num_keys ( pagenum_t p );
 
 
 pagenum_t find_leaf( int64_t key );
@@ -199,6 +203,9 @@ int db_insert( int64_t key, char * value );
 
 // Deletion.
 
+pagenum_t remove_entry_from_node( pagenum_t leaf_n, int64_t key );
+pagenum_t adjust_root( pagenum_t root );
+int delete_entry( pagenum_t n, int64_t key );
 int db_delete( int64_t key );
 
 #endif /* __BPT_H__*/
