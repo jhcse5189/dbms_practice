@@ -1010,6 +1010,17 @@ int redistribute_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int 
     
     printf("<redistribute_nodes>\n");
 
+    int i;
+
+    page_t * tmp_n = (page_t*)malloc(sizeof(page_t));
+    file_read_page(n, tmp_n);
+
+    page_t * tmp_p = (page_t*)malloc(sizeof(page_t));
+    file_read_page(tmp_n->node.parent, tmp_p);
+
+    page_t * tmp_ne = (page_t*)malloc(sizeof(page_t));
+    file_read_page(neighbor, tmp_ne);
+
     //???
     /* Case 1: n has a neighbor to the left. (common...)
      * Pull the neighbor's last key-value pair over
@@ -1018,17 +1029,54 @@ int redistribute_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int 
 
     if (neighbor_index != -1) {
 
+        if (!tmp_n->node.is_leaf) { //nonleaf...
+
+        }
+        
+        for (i = tmp_n->node.num_keys; i > 0; i--)
+            tmp_n->node.records[i] = tmp_n->node.records[i - 1];
+
+
+        if (!tmp_n->node.is_leaf) { //nonleaf...
+
+        }
+
+        else {
+            tmp_n->node.records[0] = tmp_ne->node.records[tmp_ne->node.num_keys - 1];
+            tmp_p->node.internal[k_prime_index].key = tmp_n->node.records[0].key;
+        }
     }
 
     /* Case 2: n is the leftmost child.
      * Take the...
      */
 
-    else { 
+    else {
+        if (tmp_n->node.is_leaf) {
+            tmp_n->node.records[tmp_n->node.num_keys] = tmp_ne->node.records[0];
+            tmp_p->node.internal[k_prime_index].key = tmp_ne->node.records[1].key;
+        }
+        else { //nonleaf...
 
+        }
+        for (i = 0; i < tmp_ne->node.num_keys - 1; i++)
+            tmp_ne->node.records[i] = tmp_ne->node.records[i + 1];
+        
+        if (!tmp_n->node.is_leaf) {
+
+        }
     }
 
+    tmp_n->node.num_keys++;
+    tmp_ne->node.num_keys--;
 
+    file_write_page(n, tmp_n);
+    file_write_page(tmp_n->node.parent, tmp_p);
+    file_write_page(neighbor, tmp_ne);
+
+    free(tmp_n);
+    free(tmp_p);
+    free(tmp_ne);
 
     return 0;
 }
