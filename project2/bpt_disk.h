@@ -192,6 +192,7 @@ void dec_header_free_pages( void );
 pagenum_t get_node_parent_page(pagenum_t n);
 pagenum_t get_node_parent_num_keys( pagenum_t p );
 
+void set_node_parent( pagenum_t n, pagenum_t p );
 
 pagenum_t find_leaf( int64_t key );
 char * db_find( int64_t key, char * ret_val );

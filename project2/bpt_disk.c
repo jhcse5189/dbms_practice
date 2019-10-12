@@ -302,6 +302,17 @@ pagenum_t get_node_parent_num_keys (pagenum_t p) {
     return parent_num_keys;
 }
 
+void set_node_parent( pagenum_t n, pagenum_t p ) {
+
+    // get_node_parent_page(n);
+
+    page_t * tmp_n = (page_t*)malloc(sizeof(page_t));
+    file_read_page(n, tmp_n);
+
+    tmp_n->node.parent = p;
+    file_write_page(n, tmp_n);
+    free(tmp_n);
+}
 
 void find_and_print(int64_t key) {
     // record * r = find(key);
@@ -380,6 +391,8 @@ int cut(int length) {
 
 int insert_into_node_after_splitting(pagenum_t old_node, int left_index, int64_t key, pagenum_t right) {
 
+    printf("<insert_into_node_after_splitting>\n");
+
     int split, i , j;
     pagenum_t new_node = file_alloc_page();
     int64_t k_prime;
@@ -398,8 +411,7 @@ int insert_into_node_after_splitting(pagenum_t old_node, int left_index, int64_t
 
     for (i = 0, j = 0; i < origin->node.num_keys; i++, j++) {
         if (j == left_index) j++;
-        tmp_old->node.internal[j].key = origin->node.internal[i].key;
-        tmp_old->node.internal[j].pointer = origin->node.internal[i].pointer;
+        tmp_old->node.internal[j] = origin->node.internal[i];
     }
 
     tmp_old->node.internal[left_index].key = key;
@@ -410,20 +422,24 @@ int insert_into_node_after_splitting(pagenum_t old_node, int left_index, int64_t
     //if order is 5, slpit is 2.
     origin->node.num_keys = 0;
     for (i = 0; i < split - 1; i++) {
-        origin->node.internal[i].key = tmp_old->node.internal[i].key;
-        origin->node.internal[i].pointer = tmp_old->node.internal[i].pointer;
+        origin->node.internal[i]= tmp_old->node.internal[i];
         origin->node.num_keys++;
     }
     //origin->node.
     k_prime = tmp_old->node.internal[split - 1].key;
     for (++i, j = 0; i < order; i++, j++) {
-        tmp_new->node.internal[j].key = tmp_old->node.internal[i].key;
-        tmp_new->node.internal[j].pointer = tmp_old->node.internal[i].pointer;
+        tmp_new->node.internal[j] = tmp_old->node.internal[i];
         tmp_new->node.num_keys++;
     }
     //in tmp_old, k_prime's pointer.
     tmp_new->node.right_or_indexing = tmp_old->node.internal[split - 1].pointer;
     tmp_new->node.parent = tmp_old->node.parent;
+
+    // print_tree();
+
+    set_node_parent(tmp_new->node.right_or_indexing, new_node);
+    for (i = 0; i < tmp_new->node.num_keys; i++)
+        set_node_parent(tmp_new->node.internal[i].pointer, new_node);
 
     file_write_page(new_node, tmp_new);
     file_write_page(old_node, origin);
@@ -720,6 +736,7 @@ int db_insert(int64_t key, char * value) {
 
 int get_neighbor_index(pagenum_t n) {
 
+    printf("get_ne_idx:n::%ld\n", n);
     int i;
     page_t * tmp_p = (page_t*)malloc(sizeof(page_t));
     file_read_page(get_node_parent_page(n), tmp_p);
@@ -798,16 +815,21 @@ pagenum_t adjust_root(pagenum_t root) {
     // as the new root.
     
     if (!tmp_root->node.is_leaf) {
-        page_t * new_root = (page_t*)malloc(sizeof(page_t));
-        file_read_page(tmp_root->node.internal[0].pointer, new_root);
 
-        printf("new_root_page::%ld\n", tmp_root->node.internal[0].pointer);
+        pagenum_t only_child = tmp_root->node.right_or_indexing;
+        if (get_header_free() == tmp_root->node.right_or_indexing)
+            only_child = tmp_root->node.internal[0].pointer;
+
+        page_t * new_root = (page_t*)malloc(sizeof(page_t));
+        file_read_page(only_child, new_root);
+
+        printf("new_root_page::%ld\n", only_child);
 
         file_free_page(root);
-        set_header_root(tmp_root->node.internal[0].pointer);
+        set_header_root(only_child);
         new_root->node.parent = 0;
 
-        file_write_page(tmp_root->node.internal[0].pointer, new_root);
+        file_write_page(only_child, new_root);
         free(tmp_root);
         free(new_root);
     }
@@ -833,7 +855,9 @@ int delete_entry(pagenum_t n, int64_t key) {
     // Remove key - value pair from the node.
 
     remove_entry_from_node(n, key);
-
+    printf("-------------------\n");
+    print_tree();
+    printf("-------------------\n");
     /* Case 1: deletion from the root. */
 
     if (n == get_header_root())
@@ -851,7 +875,7 @@ int delete_entry(pagenum_t n, int64_t key) {
     file_read_page(n, tmp_n);
 
     min_keys = tmp_n->node.is_leaf ? cut(order - 1) : cut(order) - 1;
-    printf("min-keys::%d\n", min_keys);
+    printf("\tmin-keys::%d\n", min_keys);
 
     /* 2-1 (simple.): node stays at or above minimum. */
     
@@ -868,9 +892,12 @@ int delete_entry(pagenum_t n, int64_t key) {
     neighbor_index = get_neighbor_index(n);
     k_prime_index = neighbor_index == -1 ? 0 : neighbor_index;
     k_prime = tmp_p->node.internal[k_prime_index].key;
+
     neighbor = neighbor_index == -1
                 ? tmp_p->node.internal[0].pointer
-                : tmp_p->node.internal[neighbor_index].pointer;
+                : tmp_p->node.internal[neighbor_index - 1].pointer;
+    if (neighbor_index == 0) neighbor = tmp_p->node.right_or_indexing;
+    
     capacity = tmp_n->node.is_leaf
                 ? order
                 : order - 1;
@@ -882,7 +909,7 @@ int delete_entry(pagenum_t n, int64_t key) {
     page_t * tmp_ne = (page_t*)malloc(sizeof(page_t));
     file_read_page(neighbor, tmp_ne);
 
-    printf("ne_idx::%d --- ne::%ld --- k_idx::%d --- k::%ld\n",
+    printf("\tne_idx::%d --- ne::%ld --- k_idx::%d --- k::%ld\n",
             neighbor_index, neighbor, k_prime_index, k_prime);
     if (tmp_ne->node.num_keys + tmp_n->node.num_keys < capacity) {
         free(tmp_n);
@@ -905,7 +932,7 @@ int coalesce_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int64_t 
     printf("<coalesce_nodes>\n");
 
     int ret;
-    int i, j, neighbor_insertion_index;
+    int i, j, neighbor_insertion_index, n_end;
     page_t* swap;
 
     page_t * tmp_n = (page_t*)malloc(sizeof(page_t));
@@ -929,13 +956,31 @@ int coalesce_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int64_t 
      */
 
     neighbor_insertion_index = tmp_ne->node.num_keys;
-    printf("ne_insert_idx::%d\n", neighbor_insertion_index);
+    printf("\tne_insert_idx::%d\n", neighbor_insertion_index);
     /* In a nonleaf, ...
      *
      */
 
     if (!tmp_n->node.is_leaf) {
-        printf("hohlhohol...\n");
+        
+        printf("*************************\n");
+        /* Append k_prime.
+         */
+
+        tmp_ne->node.internal[neighbor_insertion_index].key = k_prime;
+        tmp_ne->node.num_keys++;
+
+        n_end = tmp_n->node.num_keys;
+
+        for (i = neighbor_insertion_index + 1, j = 0; j < n_end; i++, j++)  {
+            tmp_ne->node.internal[i] = tmp_n->node.internal[j];
+            tmp_ne->node.num_keys++;
+            tmp_n->node.num_keys--;
+        }
+
+        tmp_ne->node.internal[neighbor_insertion_index].pointer = tmp_n->node.right_or_indexing;
+
+        //tmp_ne->
     }
 
     /* In a leaf, ...
@@ -964,6 +1009,27 @@ int coalesce_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int64_t 
 int redistribute_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int k_prime_index, int64_t k_prime) {
     
     printf("<redistribute_nodes>\n");
+
+    //???
+    /* Case 1: n has a neighbor to the left. (common...)
+     * Pull the neighbor's last key-value pair over
+     * from the neighbor's right end to n's left end.
+     */
+
+    if (neighbor_index != -1) {
+
+    }
+
+    /* Case 2: n is the leftmost child.
+     * Take the...
+     */
+
+    else { 
+
+    }
+
+
+
     return 0;
 }
 
