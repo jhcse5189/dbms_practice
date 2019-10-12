@@ -17,10 +17,12 @@ int main(int argc, char ** argv) {
             case 'd':
                 scanf("%ld", &key);
                 db_delete(key);
+                print_tree();
                 break;
             case 'i':
                 scanf("%ld %s", &key, value);
                 db_insert(key, value);
+                print_tree();
                 break;
             case 'f':
                 scanf("%ld", &key);
@@ -31,7 +33,7 @@ int main(int argc, char ** argv) {
                 return EXIT_SUCCESS;
                 break;
             case 't':
-                print_tree( get_header_root() );
+                print_tree();
                 break;
         }
         while (getchar() != (int)'\n');

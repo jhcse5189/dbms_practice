@@ -23,6 +23,8 @@
 #define EXIT_SUCCESS 0
 // One page size is 4096 Bytes.
 #define PAGE_SIZE 4096
+#define QUEUE_SIZE 1000
+
 
 #define HEADER_PAGE_NUMBER 0
 
@@ -81,7 +83,7 @@ typedef struct node_t {
         } internal[248];
         struct {
             record records[31];
-        }
+        };
     }; //union variable;
 
 } node_t;
@@ -116,6 +118,13 @@ typedef union page_t {
 
 } page_t;
 
+typedef struct Queue Queue;
+struct Queue {
+    int front, rear;
+    int size;
+    pagenum_t * pages;
+};
+
 
 // GLOBALS.
 
@@ -134,11 +143,11 @@ extern int order;
 /* file descriptor. */
 extern int fd;
 
-/* Free Page List */
-extern free_page_t free_page_list;
-
 /* Header Page */
 header_page_t header_page;
+
+/* queue */
+extern Queue * queue;
 
 // FUNCTION PROTOTYPES.
 
@@ -161,7 +170,9 @@ void file_read_page(pagenum_t pagenum, page_t * dest);
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
 
-void print_tree( pagenum_t n );
+void enqueue(pagenum_t n);
+pagenum_t dequeue( void );
+void print_tree();
 
 
 int open_table( char * pathname );
@@ -178,7 +189,8 @@ void set_header_num_pages( int64_t num_pages );
 void inc_header_num_pages( void );
 void dec_header_free_pages( void );
 
-pagenum_t get_node_parent_num_keys ( pagenum_t p );
+pagenum_t get_node_parent_page(pagenum_t n);
+pagenum_t get_node_parent_num_keys( pagenum_t p );
 
 
 pagenum_t find_leaf( int64_t key );
@@ -203,9 +215,11 @@ int db_insert( int64_t key, char * value );
 
 // Deletion.
 
-pagenum_t remove_entry_from_node( pagenum_t leaf_n, int64_t key );
+void remove_entry_from_node( pagenum_t n, int64_t key );
 pagenum_t adjust_root( pagenum_t root );
 int delete_entry( pagenum_t n, int64_t key );
 int db_delete( int64_t key );
 
+int coalesce_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int64_t k_prime);
+int redistribute_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int k_prime_index, int64_t k_prime);
 #endif /* __BPT_H__*/
