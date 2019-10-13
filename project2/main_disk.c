@@ -5,7 +5,6 @@
 int main(int argc, char ** argv) {
 
     int64_t key;
-    // TODO: at Windows, change to char * value and run.;
     char value[120];
     char instruction;
 

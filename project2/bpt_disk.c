@@ -1,7 +1,7 @@
 /*
  * bpt_disk.c
  */
-#define Version "0.4"
+#define Version "0.5"
 /*
  *
  * bpt: disk-based B+Tree Implementation
@@ -11,15 +11,18 @@
  * Author:    Hyeonseo Jo
  *        https://github.com/jhcse5189
  * Original Date:     5 Oct 2019
- * Last modified:     9 Oct 2019
+ * Last modified:    13 Oct 2019
  *
  * This Implementation demonstrates the disk-based B+ tree data structure
  * for educational purposes, includin binary file I/O, insertion, search, and deletion.
  *
  */
+
 #include "bpt_disk.h"
 
 // GLOBALS.
+
+
 
 /* order of tree */
 int order = DEFAULT_ORDER;
@@ -30,9 +33,12 @@ int fd;
 /* queue */
 Queue * queue;
 
+
+
 // FUNCTION DEFINITIONS.
 
 // OUTPUT AND UTILITIES
+
 
 
 // Allocate an on-disk page from the free page list
@@ -82,7 +88,8 @@ void file_write_page(pagenum_t pagenum, const page_t * src) {
 }
 
 
-void init_queue() {
+
+void init_queue(void) {
     
     queue = (Queue*)malloc(sizeof(Queue));
     queue->front = 0;
@@ -91,12 +98,12 @@ void init_queue() {
     queue->pages = (pagenum_t*)malloc(sizeof(pagenum_t) * QUEUE_SIZE);
 }
 
-int isEmpty() {
+int isEmpty(void) {
     if (queue->front == queue->rear + 1) return 1;
     return 0;
 }
 
-int isFull() {
+int isFull(void) {
     if (queue->size == QUEUE_SIZE) return 1;
     return 0;
 }
@@ -163,51 +170,8 @@ void print_tree() {
     }
 }
 
-/*
-    int i;
-    page_t * tmp_n = (page_t*)malloc(sizeof(page_t));
-    file_read_page(n, tmp_n);
 
 
-
-    if (tmp_n->node.is_leaf == 1) {
-
-        for (i = 0; i < tmp_n->node.num_keys; i++)
-            printf("%ld ", tmp_n->node.records[i].key);
-        printf("| ");
-
-        if (tmp_n->node.parent == 0
-             || get_node_parent_num_keys(tmp_n->node.parent) == i) printf("\n");
-
-    } else {
-
-        for (i = 0; i < tmp_n->node.num_keys; i++)
-            printf("%ld ", tmp_n->node.internal[i].key);
-        printf("| ");
-
-        if (tmp_n->node.parent == 0) printf("\n"); //for just root page.
-        else { //for internals.
-            
-            page_t * tmp_parent = (page_t*)malloc(sizeof(page_t));
-            file_read_page(tmp_n->node.parent, tmp_parent);
-            
-            if (tmp_parent->node.internal[get_node_parent_num_keys(tmp_n->node.parent)]
-                != n) { 
-                print_tree( tmp_parent->node.internal[i - 1].pointer );
-            }
-            printf("\n");
-        }
-
-        print_tree (tmp_n->node.right_or_indexing);
-        for  (i = 0; i < tmp_n->node.num_keys; i++)
-            print_tree(tmp_n->node.internal[i].pointer);
-    }
-    free(tmp_n);
-}
-*/
-
-
-// TODO: init. just once!!!
 int open_table(char * pathname) {
 
     fd = open(pathname, O_RDWR | O_CREAT, 0666);
@@ -220,7 +184,7 @@ int open_table(char * pathname) {
 
     page_t * tmp_h = (page_t*)malloc(sizeof(page_t));
     file_read_page(HEADER_PAGE_OFFSET, tmp_h);
-    // TODO: Header Page init "when the file doesn't have it".
+
     if (tmp_h->header_page.num_pages == 0)
         init_header_page(tmp_h);
 
@@ -378,7 +342,6 @@ record * find(int key) {
  */
 pagenum_t find_leaf(int64_t key) {
 
-    // TODO: prevent to be called when root doesn't exist yet.
     int i;
     pagenum_t c = get_header_root();
     page_t * root = (page_t*)malloc(sizeof(page_t));

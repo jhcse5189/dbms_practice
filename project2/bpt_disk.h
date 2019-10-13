@@ -1,8 +1,6 @@
 #ifndef __BPT_H__
 #define __BPT_H__
 
-// Uncomment the line below if you are compiling on Windows.
-// #define WINDOWS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,27 +15,26 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-// Default order is 4. (Fixed order, Now.)
+// Default order is 4.
 #define DEFAULT_ORDER 4
 // return 0, if the program terminated successfully.
 #define EXIT_SUCCESS 0
 // One page size is 4096 Bytes.
 #define PAGE_SIZE 4096
+#define HEADER_PAGE_OFFSET 0
+// Queue for just print tree.
 #define QUEUE_SIZE 1000
 
 
-#define HEADER_PAGE_NUMBER 0
 
-#define HEADER_PAGE_OFFSET 0
-#define HEADER_PAGE_FREE_OFFSET 0
-#define HEADER_PAGE_ROOT_OFFSET 8
-#define HEADER_PAGE_NUM_PAGES_OFFSET 16
+// TYPES.
 
-//means page number, not offset.
+
+
+// means page number, not offset.
 typedef uint64_t pagenum_t;
 
 
-// TYPES.
 
 /* One record requires 128 Bytes.
      Therefore maximum 31 records per one data page
@@ -68,15 +65,15 @@ typedef struct node_t {
     pagenum_t parent; //because, it doesn't need union with free_page_t.
     int is_leaf;
     int num_keys;
-    char reserved[104]; //112 - 8 = 104
+    char reserved[104];
     pagenum_t right_or_indexing;
 
     /* Leaf Page contains the key-value records
          ,otherwise Internal Page contains the key-(indexing)pointer pairs. */
 
-    /* union, it means a single variable, so same memory location. */
+    /* union, it means a single variable, so using same memory location. */
 
-    union { //union tag;
+    union {
         struct {
             int64_t key;
             pagenum_t pointer;
@@ -84,9 +81,10 @@ typedef struct node_t {
         struct {
             record records[31];
         };
-    }; //union variable;
+    };
 
 } node_t;
+
 
 
 /* Header Page requires 24 Bytes except reserved space. */
@@ -110,6 +108,7 @@ typedef struct free_page_t {
 } free_page_t;
 
 
+
 typedef union page_t {
 
     header_page_t header_page;
@@ -118,12 +117,15 @@ typedef union page_t {
 
 } page_t;
 
+
+
 typedef struct Queue Queue;
 struct Queue {
     int front, rear;
     int size;
     pagenum_t * pages;
 };
+
 
 
 // GLOBALS.
@@ -146,6 +148,8 @@ extern int fd;
 /* queue */
 extern Queue * queue;
 
+
+
 // FUNCTION PROTOTYPES.
 
 // Output and utility.
@@ -156,20 +160,22 @@ extern Queue * queue;
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page( void );
-
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum);
-
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t * dest);
-
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
 
+
+void init_queue(void);
+int isEmpty(void);
+int isFull(void);
 void enqueue(pagenum_t n);
-pagenum_t dequeue( void );
+pagenum_t dequeue(void);
 void print_tree();
+
 
 
 int open_table( char * pathname );
