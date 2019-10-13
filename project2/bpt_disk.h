@@ -179,8 +179,8 @@ void print_tree();
 
 
 int open_table( char * pathname );
-void db_exit( void );
 void init_header_page( page_t * tmp_h );
+void db_exit( void );
 
 pagenum_t get_header_free ( void );
 pagenum_t get_header_root( void );
@@ -189,6 +189,7 @@ int64_t get_header_num_pages( void );
 void set_header_free( pagenum_t free );
 void set_header_root( pagenum_t root );
 void set_header_num_pages( int64_t num_pages );
+
 void inc_header_num_pages( void );
 void dec_header_free_pages( void );
 
@@ -197,33 +198,42 @@ pagenum_t get_node_parent_num_keys( pagenum_t p );
 
 void set_node_parent( pagenum_t n, pagenum_t p );
 
+record * find( int key );
 pagenum_t find_leaf( int64_t key );
 char * db_find( int64_t key, char * ret_val );
 
-void find_and_print( int64_t key );
-record * find( int key );
+int cut(int length);
+
+
 
 // Insertion.
 
-int insert_into_node_after_splitting( pagenum_t parent, int left_index, int64_t key, pagenum_t right );
+
+
+
 int insert_into_node( pagenum_t n, int left_index, int64_t key, pagenum_t right );
-int get_left_index( pagenum_t parent, pagenum_t left );
+int insert_into_node_after_splitting( pagenum_t parent, int left_index, int64_t key, pagenum_t right );
 
 int insert_into_new_root( pagenum_t left, int64_t key, pagenum_t right );
 int insert_into_parent( pagenum_t leaf, int64_t new_key, pagenum_t new_leaf );
+int get_left_index( pagenum_t parent, pagenum_t left );
 
 int insert_into_leaf( pagenum_t leaf, int64_t key, char * value );
 int insert_into_leaf_after_splitting( pagenum_t leaf, int64_t key, char * value );
 int start_new_tree( int64_t key, char * value );
+
 int db_insert( int64_t key, char * value );
 
 // Deletion.
 
+int get_neighbor_index(pagenum_t n);
 void remove_entry_from_node( pagenum_t n, int64_t key );
 pagenum_t adjust_root( pagenum_t root );
 int delete_entry( pagenum_t n, int64_t key );
-int db_delete( int64_t key );
 
 int coalesce_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int64_t k_prime);
 int redistribute_nodes(pagenum_t n, pagenum_t neighbor, int neighbor_index, int k_prime_index, int64_t k_prime);
+
+int db_delete( int64_t key );
+
 #endif /* __BPT_H__*/
