@@ -143,9 +143,6 @@ extern int order;
 /* file descriptor. */
 extern int fd;
 
-/* Header Page */
-header_page_t header_page;
-
 /* queue */
 extern Queue * queue;
 
@@ -177,7 +174,7 @@ void print_tree();
 
 int open_table( char * pathname );
 void db_exit( void );
-void init_header_page( void );
+void init_header_page( page_t * tmp_h );
 
 pagenum_t get_header_free ( void );
 pagenum_t get_header_root( void );
